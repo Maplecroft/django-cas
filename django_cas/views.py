@@ -3,7 +3,7 @@ from datetime import datetime
 from urllib import urlencode
 from urlparse import urljoin
 
-from django.http import get_host, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django_cas.models import PgtIOU
@@ -12,16 +12,18 @@ __all__ = ['login', 'logout']
 
 def _service_url(request, redirect_to=None):
     """Generates application service URL for CAS"""
-
     protocol = ('http://', 'https://')[request.is_secure()]
-    host = get_host(request)
+    host = request.get_host()
     service = protocol + host + request.path
     if redirect_to:
-        if '?' in service:
-            service += '&'
+        if not getattr(settings, 'CAS_SERVER_SUPPORT_REDIRECT', True):
+            service = protocol + host + redirect_to
         else:
-            service += '?'
-        service += urlencode({REDIRECT_FIELD_NAME: redirect_to})
+            if '?' in service:
+                service += '&'
+            else:
+                service += '?'
+            service += urlencode({REDIRECT_FIELD_NAME: redirect_to})
     return service
 
 
@@ -37,7 +39,7 @@ def _redirect_url(request):
         else:
             next = request.META.get('HTTP_REFERER', settings.CAS_REDIRECT_URL)
         prefix = (('http://', 'https://')[request.is_secure()] +
-                  get_host(request))
+                  request.get_host())
         if next.startswith(prefix):
             next = next[len(prefix):]
     return next
@@ -45,7 +47,7 @@ def _redirect_url(request):
 
 def _login_url(service, ticket='ST'):
     """Generates CAS login URL"""
-    LOGINS = {'ST':'login',
+    LOGINS = {'ST': getattr(settings, 'CAS_LOGIN_URL_SUFFIX', 'login'),
               'PT':'proxyValidate'}
     params = {'service': service}
     if settings.CAS_EXTRA_LOGIN_PARAMS:
@@ -62,7 +64,7 @@ def _logout_url(request, next_page=None):
     url = urljoin(settings.CAS_SERVER_URL, 'logout')
     if next_page:
         protocol = ('http://', 'https://')[request.is_secure()]
-        host = get_host(request)
+        host = request.get_host()
         url += '?' + urlencode({'url': protocol + host + next_page})
     return url
 

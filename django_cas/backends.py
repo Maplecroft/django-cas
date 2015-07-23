@@ -48,7 +48,10 @@ def _verify_cas2(ticket, service):
     else:
         params = {'ticket': ticket, 'service': service}
 
-    url = (urljoin(settings.CAS_SERVER_URL, 'proxyValidate') + '?' +
+    proxy_suffix = getattr(settings, 'CAS_PROXY_URL_SUFFIX', 'proxyValidate')
+
+    url = (urljoin(
+            settings.CAS_SERVER_URL, proxy_suffix) + '?' +
            urllib.urlencode(params))
 
     page = urllib.urlopen(url)
@@ -89,7 +92,9 @@ def verify_proxy_ticket(ticket, service):
 
     params = {'ticket': ticket, 'service': service}
 
-    url = (urljoin(settings.CAS_SERVER_URL, 'proxyValidate') + '?' +
+    proxy_suffix = getattr(settings, 'CAS_PROXY_URL_SUFFIX', 'proxyValidate')
+
+    url = (urljoin(settings.CAS_SERVER_URL, proxy_suffix) + '?' +
            urlencode(params))
 
     page = urlopen(url)

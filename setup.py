@@ -33,8 +33,8 @@ to the admin interface.
 .. _CAS: http://www.ja-sig.org/products/cas/
 .. _Django: http://www.djangoproject.com/
 """,
-    name='django_cas_mc',
-    packages=['django_cas_mc'],
+    name='django_cas',
+    packages=['django_cas'],
     url='https://github.com/castlabs/django-cas',
-    version='2.1.1-mc',
+    version='2.2.0-mc',
 )
