@@ -69,7 +69,7 @@ def _logout_url(request, next_page=None):
     return url
 
 
-def login(request, next_page=None, required=False):
+def login(request, next_page=None, required=False, **kwargs):
     """Forwards to CAS login URL or verifies CAS ticket"""
 
     if not next_page:
@@ -99,7 +99,7 @@ def login(request, next_page=None, required=False):
         return HttpResponseRedirect(_login_url(service, ticket))
 
 
-def logout(request, next_page=None):
+def logout(request, next_page=None, **kwargs):
     """Redirects to CAS logout page"""
 
     from django.contrib.auth import logout
