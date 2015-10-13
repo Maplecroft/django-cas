@@ -5,7 +5,7 @@ from urlparse import urljoin
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django_cas.models import User, Tgt, PgtIOU
+from django_cas.models import User, Tgt, PgtIOU, InitialTicket
 from django_cas import CAS
 
 __all__ = ['CASBackend']
@@ -144,6 +144,14 @@ class CASBackend(object):
             _CAS_USER_DETAILS_RESOLVER(user, authentication_response)
 
         user.save()
+
+        # Store the initial exchanged ticket against the SSO
+        InitialTicket.objects.filter(user=user).delete()
+        InitialTicket.objects.create(
+            user=user,
+            tgt=ticket
+        )
+
         return user
 
     def get_user(self, user_id):

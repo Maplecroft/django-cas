@@ -51,6 +51,16 @@ class PgtIOU(models.Model):
     tgt = models.CharField(max_length = 255)
     created = models.DateTimeField(auto_now = True)
 
+
+class InitialTicket(models.Model):
+    """ Model to store the initial ticket exchanged with the SSO
+        server to p
+    """
+
+    user = models.ForeignKey(User)
+    tgt = models.CharField(max_length = 255)
+    created = models.DateTimeField(auto_now = True)
+
 def get_tgt_for(user):
     if not settings.CAS_PROXY_CALLBACK:
         raise CasConfigException("No proxy callback set in settings")

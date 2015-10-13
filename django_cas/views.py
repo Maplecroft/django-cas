@@ -6,7 +6,9 @@ from urlparse import urljoin
 from django.http import HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from django_cas.models import PgtIOU
+from django_cas.models import PgtIOU, InitialTicket
+
+from django.contrib.sessions.models import Session
 
 __all__ = ['login', 'logout']
 
@@ -89,6 +91,7 @@ def login(request, next_page=None, required=False, **kwargs):
             name = user.first_name or user.username
             message = "Login succeeded. Welcome, %s." % name
             user.message_set.create(message=message)
+
             return HttpResponseRedirect(next_page)
         elif settings.CAS_RETRY_LOGIN or required:
             return HttpResponseRedirect(_login_url(service, ticket))
@@ -111,11 +114,30 @@ def logout(request, next_page=None, **kwargs):
     else:
         return HttpResponseRedirect(next_page)
 
+def ssologout(request, ticket):
+    """Provide a logout from an inital ticket
+    """
+    try:
+        ticket = InitialTicket.objects.get(tgt=ticket)
+    except:
+        return HttpResponse("No such session exists", status=400)
+
+    user = ticket.user
+    for session in Session.objects.all():
+        session_uid = str(session.get_decoded().get('_auth_user_id'))
+        if session_uid == str(user.id):
+            session.delete()
+    ticket.delete()
+
+    return HttpResponse("OK")
+
+
+
 def proxy_callback(request):
     """Handles CAS 2.0+ XML-based proxy callback call.
     Stores the proxy granting ticket in the database for 
     future use.
-    
+
     NB: Use created and set it in python in case database
     has issues with setting up the default timestamp value
     """
