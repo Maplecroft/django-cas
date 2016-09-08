@@ -4,7 +4,7 @@ from urllib import urlencode
 
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.conf import settings
-from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME, logout as user_logout
 from django.contrib.auth.views import login, logout
 from django.core.urlresolvers import reverse
 
@@ -34,14 +34,24 @@ class CASMiddleware(object):
         login URL, as well as calls to django.contrib.auth.views.login and
         logout.
         """
-
         if view_func == login:
             return cas_login(request, *view_args, **view_kwargs)
         elif view_func == logout:
             return cas_logout(request, *view_args, **view_kwargs)
 
-        if settings.CAS_ADMIN_PREFIX:
-            if not request.path.startswith(settings.CAS_ADMIN_PREFIX):
+        if settings.CAS_ADMIN_PREFIX and \
+           not request.path.startswith(settings.CAS_ADMIN_PREFIX):
+
+                # Ignore static
+                if view_func.__module__.startswith('django.views.static'):
+                    return None
+
+                # Log out admins that stray off the admin section
+                if getattr(settings, "CAS_ADMIN_VIEWS_RESTRICTED", False):
+                    if request.user.is_authenticated():
+                        if request.user.is_staff:
+                            return user_logout(request)
+
                 return None
         elif not view_func.__module__.startswith('django.contrib.admin.'):
             return None
@@ -53,5 +63,10 @@ class CASMiddleware(object):
                 error = ('<h1>Forbidden</h1><p>You do not have staff '
                          'privileges.</p>')
                 return HttpResponseForbidden(error)
+
+        # Allow admins to log in by other means
+        elif getattr(settings, 'CAS_ADMIN_IGNORE', False):
+            return None
+
         params = urlencode({REDIRECT_FIELD_NAME: request.get_full_path()})
         return HttpResponseRedirect(reverse(cas_login) + '?' + params)
